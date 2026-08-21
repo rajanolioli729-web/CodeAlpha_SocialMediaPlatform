@@ -1,0 +1,157 @@
+/* ============================================
+   SocialSphere - Profile Page Stylesheet
+   ============================================ */
+
+/* ============================================
+   Profile Header
+   ============================================ */
+
+.profile-header {
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-cover {
+  height: 200px;
+  background: linear-gradient(135deg, #1da1f2 0%, #0d8bdd 50%, #657786 100%);
+}
+
+.profile-info {
+  display: flex;
+  gap: 20px;
+  padding: 0 24px 24px;
+  margin-top: -50px;
+  position: relative;
+}
+
+.profile-avatar {
+  flex-shrink: 0;
+}
+
+.profile-avatar img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background: #fff;
+}
+
+.profile-details {
+  flex: 1;
+  padding-top: 60px;
+}
+
+.profile-details h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.profile-bio {
+  color: var(--text-light);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ============================================
+   Profile Stats
+   ============================================ */
+
+.profile-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* ============================================
+   Profile Actions
+   ============================================ */
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ============================================
+   Edit Profile Card
+   ============================================ */
+
+.edit-profile-card {
+  margin-top: 20px;
+}
+
+.edit-profile-card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+/* ============================================
+   Profile Posts
+   ============================================ */
+
+.profile-posts {
+  margin-top: 20px;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 600px) {
+  .profile-cover {
+    height: 140px;
+  }
+
+  .profile-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: -40px;
+    padding: 0 16px 20px;
+  }
+
+  .profile-avatar img {
+    width: 90px;
+    height: 90px;
+  }
+
+  .profile-details {
+    padding-top: 0;
+  }
+
+  .profile-stats {
+    justify-content: center;
+  }
+
+  .profile-actions {
+    justify-content: center;
+  }
+}

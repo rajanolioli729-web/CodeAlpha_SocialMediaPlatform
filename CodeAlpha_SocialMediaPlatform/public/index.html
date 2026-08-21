@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home - SocialSphere</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">SocialSphere</a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="create-post.html" class="nav-link">Create Post</a>
+        <a href="#" id="nav-profile" class="nav-link">Profile</a>
+        <button id="nav-logout" class="btn btn-outline btn-sm">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="feed-layout">
+      <aside class="sidebar">
+        <div class="card profile-card">
+          <div id="current-user-info" class="profile-card-info">
+            <div class="skeleton skeleton-circle"></div>
+            <div class="skeleton skeleton-text"></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="feed">
+        <div class="card create-post-card">
+          <a href="create-post.html" class="btn btn-primary btn-block">What's on your mind?</a>
+        </div>
+
+        <div id="feed-container">
+          <div class="loading-spinner" id="feed-loading">
+            <div class="spinner"></div>
+            <p>Loading posts...</p>
+          </div>
+        </div>
+
+        <div class="pagination-controls" id="pagination-controls">
+          <button id="prev-page" class="btn btn-outline btn-sm" disabled>Previous</button>
+          <span id="page-info">Page 1</span>
+          <button id="next-page" class="btn btn-outline btn-sm" disabled>Next</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast-container"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/feed.js"></script>
+</body>
+</html>
