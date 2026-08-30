@@ -1,61 +1,267 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Create Post - SocialSphere</title>
+
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
+
+  <!-- ============================================
+       NAVIGATION
+  ============================================= -->
+
   <nav class="navbar">
+
     <div class="nav-container">
-      <a href="index.html" class="nav-brand">SocialSphere</a>
+
+      <a href="index.html" class="nav-brand">
+        SocialSphere
+      </a>
+
       <div class="nav-links">
-        <a href="index.html" class="nav-link">Home</a>
-        <a href="create-post.html" class="nav-link active">Create Post</a>
-        <a href="#" id="nav-profile" class="nav-link">Profile</a>
-        <button id="nav-logout" class="btn btn-outline btn-sm">Logout</button>
+
+        <a href="index.html" class="nav-link">
+          Home
+        </a>
+
+        <a href="create-post.html" class="nav-link active">
+          Create Post
+        </a>
+
+        <a href="#" id="nav-profile" class="nav-link">
+          Profile
+        </a>
+
+        <button
+          id="nav-logout"
+          class="btn btn-outline btn-sm"
+          type="button"
+        >
+          Logout
+        </button>
+
       </div>
+
     </div>
+
   </nav>
 
+
+  <!-- ============================================
+       MAIN CONTENT
+  ============================================= -->
+
   <main class="container">
+
     <div class="create-post-layout">
+
       <div class="card create-post-card">
+
         <h1>Create a New Post</h1>
-        <form id="create-post-form" novalidate>
-          <div class="form-group">
-            <label for="content">What's on your mind?</label>
-            <textarea id="content" name="content" rows="6" maxlength="5000" placeholder="Share something with the community..." required></textarea>
-            <span class="error-message" id="content-error"></span>
-            <div class="char-counter"><span id="char-count">0</span>/5000</div>
-          </div>
+
+
+        <!-- ========================================
+             CREATE POST FORM
+        ========================================= -->
+
+        <form
+          id="create-post-form"
+          enctype="multipart/form-data"
+          novalidate
+        >
+
+          <!-- ======================================
+               CAPTION / CONTENT
+          ======================================= -->
 
           <div class="form-group">
-            <label for="image-url">Image URL (optional)</label>
-            <input type="url" id="image-url" name="image_url" placeholder="https://example.com/image.jpg">
-            <span class="error-message" id="image-url-error"></span>
+
+            <label for="content">
+              What's on your mind?
+            </label>
+
+            <textarea
+              id="content"
+              name="content"
+              rows="6"
+              maxlength="5000"
+              placeholder="Share something with the community..."
+              required
+            ></textarea>
+
+            <span
+              class="error-message"
+              id="content-error"
+            ></span>
+
+            <div class="char-counter">
+              <span id="char-count">0</span>/5000
+            </div>
+
           </div>
 
-          <div class="form-error" id="form-error" hidden></div>
+
+          <!-- ======================================
+               IMAGE FILE UPLOAD
+          ======================================= -->
+
+          <div class="form-group">
+
+            <label for="image">
+              Choose Image
+              <span>(optional)</span>
+            </label>
+
+            <input
+              type="file"
+              id="image"
+              name="image"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+            >
+
+            <small class="form-help">
+              JPG, PNG, GIF or WEBP. Maximum size: 5 MB.
+            </small>
+
+            <span
+              class="error-message"
+              id="image-error"
+            ></span>
+
+
+            <!-- ====================================
+                 IMAGE PREVIEW
+            ===================================== -->
+
+            <div
+              id="image-preview-container"
+              hidden
+            >
+
+              <img
+                id="image-preview"
+                src=""
+                alt="Selected image preview"
+                class="post-image-preview"
+              >
+
+              <button
+                type="button"
+                id="remove-image-btn"
+                class="btn btn-outline btn-sm"
+              >
+                Remove Image
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- ======================================
+               EXISTING IMAGE URL SUPPORT
+          ======================================= -->
+
+          <div class="form-group">
+
+            <label for="image-url">
+              Or use Image URL
+              <span>(optional)</span>
+            </label>
+
+            <input
+              type="url"
+              id="image-url"
+              name="image_url"
+              placeholder="https://example.com/image.jpg"
+            >
+
+            <span
+              class="error-message"
+              id="image-url-error"
+            ></span>
+
+          </div>
+
+
+          <!-- ======================================
+               FORM ERROR
+          ======================================= -->
+
+          <div
+            class="form-error"
+            id="form-error"
+            hidden
+          ></div>
+
+
+          <!-- ======================================
+               FORM ACTIONS
+          ======================================= -->
 
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="submit-post-btn">
-              <span class="btn-text">Post</span>
-              <span class="btn-loading" hidden>Posting...</span>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="submit-post-btn"
+            >
+
+              <span class="btn-text">
+                Post
+              </span>
+
+              <span
+                class="btn-loading"
+                hidden
+              >
+                Posting...
+              </span>
+
             </button>
-            <a href="index.html" class="btn btn-outline">Cancel</a>
+
+
+            <a
+              href="index.html"
+              class="btn btn-outline"
+            >
+              Cancel
+            </a>
+
           </div>
+
         </form>
+
       </div>
+
     </div>
+
   </main>
 
+
+  <!-- ============================================
+       TOAST
+  ============================================= -->
+
   <div id="toast-container"></div>
+
+
+  <!-- ============================================
+       JAVASCRIPT
+  ============================================= -->
 
   <script src="js/utils.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/feed.js"></script>
+
 </body>
+
 </html>
+```

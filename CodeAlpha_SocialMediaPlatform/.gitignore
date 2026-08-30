@@ -2,3 +2,10 @@ node_modules/
 .env
 *.log
 .DS_Store
+
+# User uploaded files
+public/uploads/
+
+# Local development files
+.vscode/
+.idea/

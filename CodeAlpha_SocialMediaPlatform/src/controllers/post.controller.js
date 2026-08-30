@@ -1,4 +1,4 @@
-const postService = require('../services/post.service');
+﻿const postService = require('../services/post.service');
 
 /**
  * GET /api/posts
@@ -30,7 +30,11 @@ async function getFeed(req, res, next) {
 async function getPost(req, res, next) {
   try {
     const postId = parseInt(req.params.id, 10);
-    const post = await postService.getPostById(postId, req.user ? req.user.id : null);
+
+    const post = await postService.getPostById(
+      postId,
+      req.user ? req.user.id : null
+    );
 
     res.status(200).json({
       success: true,
@@ -44,11 +48,29 @@ async function getPost(req, res, next) {
 
 /**
  * POST /api/posts
+ *
+ * Supports:
+ * - Text/caption
+ * - Existing image URL
+ * - New uploaded image through Multer
  */
 async function createPost(req, res, next) {
   try {
-    const { content, image_url } = req.body;
-    const post = await postService.createPost(req.user.id, { content, image_url });
+    const { content } = req.body;
+
+    // Start with an existing image URL if one was provided.
+    let image_url = req.body.image_url || null;
+
+    // If the user selected a file, Multer stores it in public/uploads.
+    // Save the public URL/path into the existing image_url column.
+    if (req.file) {
+      image_url = `/uploads/${req.file.filename}`;
+    }
+
+    const post = await postService.createPost(req.user.id, {
+      content,
+      image_url
+    });
 
     res.status(201).json({
       success: true,
@@ -62,12 +84,22 @@ async function createPost(req, res, next) {
 
 /**
  * PUT /api/posts/:id
+ *
+ * Currently keeps the existing image URL editing functionality.
  */
 async function updatePost(req, res, next) {
   try {
     const postId = parseInt(req.params.id, 10);
     const { content, image_url } = req.body;
-    const post = await postService.updatePost(postId, req.user.id, { content, image_url });
+
+    const post = await postService.updatePost(
+      postId,
+      req.user.id,
+      {
+        content,
+        image_url
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -85,7 +117,11 @@ async function updatePost(req, res, next) {
 async function deletePost(req, res, next) {
   try {
     const postId = parseInt(req.params.id, 10);
-    await postService.deletePost(postId, req.user.id);
+
+    await postService.deletePost(
+      postId,
+      req.user.id
+    );
 
     res.status(200).json({
       success: true,
@@ -97,4 +133,10 @@ async function deletePost(req, res, next) {
   }
 }
 
-module.exports = { getFeed, getPost, createPost, updatePost, deletePost };
+module.exports = {
+  getFeed,
+  getPost,
+  createPost,
+  updatePost,
+  deletePost
+};
