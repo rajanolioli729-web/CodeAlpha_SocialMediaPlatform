@@ -4,254 +4,1150 @@
 
 let profileUserId = null;
 let profilePage = 1;
+
 const PROFILE_POSTS_PER_PAGE = 10;
 
 /**
- * Get the profile user ID from URL or use current user.
+ * Local-safe default profile image.
+ * Uses data: because your CSP allows data images.
+ */
+const DEFAULT_PROFILE_IMAGE =
+  'data:image/svg+xml;charset=UTF-8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">' +
+    '<rect width="150" height="150" fill="#e5e7eb"/>' +
+    '<circle cx="75" cy="58" r="28" fill="#9ca3af"/>' +
+    '<path d="M25 135c5-30 25-45 50-45s45 15 50 45" fill="#9ca3af"/>' +
+    '</svg>'
+  );
+
+/**
+ * Get usable profile image URL.
+ */
+function getProfileImageUrl(image) {
+  if (!image) {
+    return DEFAULT_PROFILE_IMAGE;
+  }
+
+  const value = String(image).trim();
+
+  if (!value) {
+    return DEFAULT_PROFILE_IMAGE;
+  }
+
+  if (value.startsWith('data:')) {
+    return value;
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (value.startsWith('/')) {
+    return value;
+  }
+
+  return '/' + value;
+}
+
+/**
+ * Get profile user ID from URL.
  */
 function getProfileUserId() {
   const urlId = getUrlParam('id');
+
   if (urlId) {
-    return parseInt(urlId, 10);
+    const id = parseInt(urlId, 10);
+
+    if (!Number.isNaN(id)) {
+      return id;
+    }
   }
+
   return currentUser ? currentUser.id : null;
 }
 
 /**
- * Load the profile data.
+ * Load profile.
  */
 async function loadProfile() {
   profileUserId = getProfileUserId();
 
   if (!profileUserId) {
     showToast('User not found', 'error');
-    setTimeout(() => window.location.href = '/index.html', 1000);
+
+    setTimeout(function () {
+      window.location.href = '/index.html';
+    }, 1000);
+
     return;
   }
 
   try {
-    const response = await usersApi.getProfile(profileUserId);
-    const { profile, is_following } = response.data;
+    const response =
+      await usersApi.getProfile(profileUserId);
 
-    // Update profile header
-    document.getElementById('profile-username').textContent = profile.username;
-    document.getElementById('profile-bio').textContent = profile.bio || 'No bio yet';
-    document.getElementById('profile-image').src = profile.profile_image || 'https://i.pravatar.cc/150?img=1';
-    document.getElementById('stat-posts').textContent = profile.posts_count;
-    document.getElementById('stat-followers').textContent = profile.followers_count;
-    document.getElementById('stat-following').textContent = profile.following_count;
+    const data =
+      response.data || {};
 
-    // Setup actions
-    const isOwnProfile = currentUser && profile.id === currentUser.id;
-    const followBtn = document.getElementById('follow-btn');
-    const editBtn = document.getElementById('edit-profile-btn');
+    const profile =
+      data.profile || {};
+
+    const isFollowing =
+      Boolean(data.is_following);
+
+    const usernameElement =
+      document.getElementById(
+        'profile-username'
+      );
+
+    const bioElement =
+      document.getElementById(
+        'profile-bio'
+      );
+
+    const imageElement =
+      document.getElementById(
+        'profile-image'
+      );
+
+    const postsElement =
+      document.getElementById(
+        'stat-posts'
+      );
+
+    const followersElement =
+      document.getElementById(
+        'stat-followers'
+      );
+
+    const followingElement =
+      document.getElementById(
+        'stat-following'
+      );
+
+    if (usernameElement) {
+      usernameElement.textContent =
+        profile.username || 'Unknown User';
+    }
+
+    if (bioElement) {
+      bioElement.textContent =
+        profile.bio || 'No bio yet';
+    }
+
+    if (imageElement) {
+      imageElement.src =
+        getProfileImageUrl(
+          profile.profile_image
+        );
+
+      imageElement.onerror =
+        function () {
+          this.onerror = null;
+          this.src = DEFAULT_PROFILE_IMAGE;
+        };
+    }
+
+    if (postsElement) {
+      postsElement.textContent =
+        profile.posts_count || 0;
+    }
+
+    if (followersElement) {
+      followersElement.textContent =
+        profile.followers_count || 0;
+    }
+
+    if (followingElement) {
+      followingElement.textContent =
+        profile.following_count || 0;
+    }
+
+    const followBtn =
+      document.getElementById(
+        'follow-btn'
+      );
+
+    const editBtn =
+      document.getElementById(
+        'edit-profile-btn'
+      );
+
+    const isOwnProfile =
+      currentUser &&
+      Number(profile.id) ===
+        Number(currentUser.id);
 
     if (isOwnProfile) {
-      editBtn.hidden = false;
-      followBtn.hidden = true;
+      if (editBtn) {
+        editBtn.hidden = false;
+      }
+
+      if (followBtn) {
+        followBtn.hidden = true;
+      }
     } else {
-      followBtn.hidden = false;
-      editBtn.hidden = true;
-      updateFollowButton(is_following);
+      if (editBtn) {
+        editBtn.hidden = true;
+      }
+
+      if (followBtn) {
+        followBtn.hidden = false;
+
+        updateFollowButton(
+          isFollowing
+        );
+      }
     }
 
-    // Load user's posts
     await loadProfilePosts();
-  } catch (err) {
-    showToast(err.message || 'Failed to load profile', 'error');
-    setTimeout(() => window.location.href = '/index.html', 1000);
+
+  } catch (error) {
+    console.error(
+      'Load profile error:',
+      error
+    );
+
+    showToast(
+      error.message ||
+      'Failed to load profile',
+      'error'
+    );
   }
 }
 
 /**
- * Update the follow button state.
- * @param {boolean} isFollowing - Whether the current user follows this profile
+ * Update follow button.
  */
-function updateFollowButton(isFollowing) {
-  const followBtn = document.getElementById('follow-btn');
-  if (!followBtn) return;
+function updateFollowButton(
+  isFollowing
+) {
+  const followBtn =
+    document.getElementById(
+      'follow-btn'
+    );
 
-  followBtn.textContent = isFollowing ? 'Unfollow' : 'Follow';
-  followBtn.classList.toggle('btn-outline', isFollowing);
-  followBtn.classList.toggle('btn-primary', !isFollowing);
-  followBtn.dataset.following = isFollowing ? 'true' : 'false';
-}
-
-/**
- * Load the profile user's posts.
- */
-async function loadProfilePosts() {
-  const container = document.getElementById('profile-posts-container');
-  if (!container) return;
-
-  showLoading(container, 'Loading posts...');
-
-  try {
-    const response = await usersApi.getUserPosts(profileUserId, profilePage, PROFILE_POSTS_PER_PAGE);
-    const { posts, pagination } = response.data;
-
-    if (posts.length === 0) {
-      showEmptyState(container, '📝', 'No posts yet', 'This user hasn\'t posted anything yet.');
-    } else {
-      container.innerHTML = posts.map(renderPost).join('');
-      setupPostEventListeners();
-    }
-
-    updatePagination(pagination);
-  } catch (err) {
-    container.innerHTML = '';
-    showEmptyState(container, '⚠️', 'Failed to load posts', err.message || 'Please try again later.');
+  if (!followBtn) {
+    return;
   }
+
+  followBtn.textContent =
+    isFollowing
+      ? 'Unfollow'
+      : 'Follow';
+
+  followBtn.dataset.following =
+    isFollowing
+      ? 'true'
+      : 'false';
+
+  followBtn.classList.toggle(
+    'btn-outline',
+    isFollowing
+  );
+
+  followBtn.classList.toggle(
+    'btn-primary',
+    !isFollowing
+  );
 }
 
 /**
- * Handle follow/unfollow.
+ * Handle follow / unfollow.
  */
 async function handleFollow() {
-  const followBtn = document.getElementById('follow-btn');
-  if (!followBtn) return;
+  const followBtn =
+    document.getElementById(
+      'follow-btn'
+    );
 
-  const isFollowing = followBtn.dataset.following === 'true';
+  if (!followBtn) {
+    return;
+  }
+
+  const isFollowing =
+    followBtn.dataset.following ===
+    'true';
 
   followBtn.disabled = true;
+
   try {
+    let response;
+
     if (isFollowing) {
-      const response = await usersApi.unfollow(profileUserId);
+      response =
+        await usersApi.unfollow(
+          profileUserId
+        );
+
       updateFollowButton(false);
-      document.getElementById('stat-followers').textContent = response.data.followers_count;
-      showToast('Unfollowed', 'info');
+
+      showToast(
+        'Unfollowed',
+        'info'
+      );
+
     } else {
-      const response = await usersApi.follow(profileUserId);
+      response =
+        await usersApi.follow(
+          profileUserId
+        );
+
       updateFollowButton(true);
-      document.getElementById('stat-followers').textContent = response.data.followers_count;
-      showToast('Following!', 'success');
+
+      showToast(
+        'Following!',
+        'success'
+      );
     }
-  } catch (err) {
-    showToast(err.message || 'Failed to update follow status', 'error');
+
+    if (
+      response &&
+      response.data &&
+      response.data.followers_count !==
+        undefined
+    ) {
+      const followersElement =
+        document.getElementById(
+          'stat-followers'
+        );
+
+      if (followersElement) {
+        followersElement.textContent =
+          response.data.followers_count;
+      }
+    }
+
+  } catch (error) {
+    console.error(
+      'Follow error:',
+      error
+    );
+
+    showToast(
+      error.message ||
+      'Failed to update follow status',
+      'error'
+    );
+
   } finally {
     followBtn.disabled = false;
   }
 }
 
 /**
- * Toggle the edit profile form.
+ * Load profile posts.
+ */
+async function loadProfilePosts() {
+  const container =
+    document.getElementById(
+      'profile-posts-container'
+    );
+
+  if (!container) {
+    return;
+  }
+
+  showLoading(
+    container,
+    'Loading posts...'
+  );
+
+  try {
+    const response =
+      await usersApi.getUserPosts(
+        profileUserId,
+        profilePage,
+        PROFILE_POSTS_PER_PAGE
+      );
+
+    const data =
+      response.data || {};
+
+    const posts =
+      Array.isArray(data.posts)
+        ? data.posts
+        : [];
+
+    const pagination =
+      data.pagination || {};
+
+    console.log(
+      'Profile posts response:',
+      data
+    );
+
+    if (posts.length === 0) {
+      showEmptyState(
+        container,
+        '📝',
+        'No posts yet',
+        "This user hasn't posted anything yet."
+      );
+
+      updatePagination(
+        pagination
+      );
+
+      return;
+    }
+
+    /*
+     * Use existing renderPost if available.
+     */
+    if (
+      typeof renderPost ===
+      'function'
+    ) {
+      container.innerHTML =
+        posts
+          .map(function (post) {
+            return renderPost(post);
+          })
+          .join('');
+
+      if (
+        typeof setupPostEventListeners ===
+        'function'
+      ) {
+        setupPostEventListeners();
+      }
+
+    } else {
+      /*
+       * Fallback renderer.
+       */
+      container.innerHTML =
+        posts
+          .map(function (post) {
+            return renderSimpleProfilePost(
+              post
+            );
+          })
+          .join('');
+    }
+
+    updatePagination(
+      pagination
+    );
+
+  } catch (error) {
+    console.error(
+      'Load profile posts error:',
+      error
+    );
+
+    container.innerHTML = '';
+
+    showEmptyState(
+      container,
+      '⚠️',
+      'Failed to load posts',
+      error.message ||
+      'Please try again later.'
+    );
+  }
+}
+
+/**
+ * Simple fallback post renderer.
+ */
+function renderSimpleProfilePost(
+  post
+) {
+  const username =
+    post.username ||
+    post.author_username ||
+    'User';
+
+  const content =
+    post.content || '';
+
+  const image =
+    post.image_url ||
+    post.image ||
+    '';
+
+  const profileImage =
+    post.author_profile_image ||
+    post.profile_image ||
+    '';
+
+  const likes =
+    post.likes_count ||
+    0;
+
+  const comments =
+    post.comments_count ||
+    0;
+
+  const avatar =
+    getProfileImageUrl(
+      profileImage
+    );
+
+  const postImage =
+    image
+      ? '<div class="post-image-container">' +
+        '<img class="post-image" src="' +
+        getProfileImageUrl(image) +
+        '" alt="Post image">' +
+        '</div>'
+      : '';
+
+  return (
+    '<article class="card post-card">' +
+
+    '<div class="post-author">' +
+
+    '<img class="post-author-avatar" src="' +
+    avatar +
+    '" alt="Profile">' +
+
+    '<div class="post-author-info">' +
+    '<strong>' +
+    escapeHtmlSafe(username) +
+    '</strong>' +
+    '</div>' +
+
+    '</div>' +
+
+    (
+      content
+        ? '<div class="post-content">' +
+          escapeHtmlSafe(content) +
+          '</div>'
+        : ''
+    ) +
+
+    postImage +
+
+    '<div class="post-actions">' +
+
+    '<span class="btn btn-sm btn-outline">' +
+    '♡ Like ' +
+    likes +
+    '</span>' +
+
+    '<span class="btn btn-sm btn-outline">' +
+    '💬 Comments ' +
+    comments +
+    '</span>' +
+
+    '</div>' +
+
+    '</article>'
+  );
+}
+
+/**
+ * Safe HTML helper.
+ */
+function escapeHtmlSafe(
+  value
+) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Update pagination.
+ */
+function updatePagination(
+  pagination
+) {
+  const previous =
+    document.getElementById(
+      'prev-page'
+    );
+
+  const next =
+    document.getElementById(
+      'next-page'
+    );
+
+  const pageInfo =
+    document.getElementById(
+      'page-info'
+    );
+
+  const current =
+    Number(
+      pagination.current_page ??
+      pagination.currentPage ??
+      pagination.page ??
+      profilePage
+    );
+
+  const total =
+    Number(
+      pagination.total_pages ??
+      pagination.totalPages ??
+      pagination.pages ??
+      1
+    );
+
+  if (pageInfo) {
+    pageInfo.textContent =
+      'Page ' +
+      current +
+      ' of ' +
+      total;
+  }
+
+  if (previous) {
+    previous.disabled =
+      current <= 1;
+  }
+
+  if (next) {
+    next.disabled =
+      current >= total;
+  }
+}
+
+/**
+ * Toggle edit profile.
+ *
+ * IMPORTANT:
+ * File inputs cannot be assigned an existing
+ * filename for security reasons.
  */
 function toggleEditProfile() {
-  const editCard = document.getElementById('edit-profile-card');
-  if (!editCard) return;
+  const editCard =
+    document.getElementById(
+      'edit-profile-card'
+    );
+
+  if (!editCard) {
+    return;
+  }
 
   if (editCard.hidden) {
-    // Populate form with current data
-    document.getElementById('edit-username').value = currentUser.username || '';
-    document.getElementById('edit-bio').value = currentUser.bio || '';
-    document.getElementById('edit-profile-image').value = currentUser.profile_image || '';
+    if (!currentUser) {
+      showToast(
+        'User information is not available',
+        'error'
+      );
+
+      return;
+    }
+
+    const usernameInput =
+      document.getElementById(
+        'edit-username'
+      );
+
+    const bioInput =
+      document.getElementById(
+        'edit-bio'
+      );
+
+    const imageInput =
+      document.getElementById(
+        'edit-profile-image'
+      );
+
+    if (usernameInput) {
+      usernameInput.value =
+        currentUser.username || '';
+    }
+
+    if (bioInput) {
+      bioInput.value =
+        currentUser.bio || '';
+    }
+
+    /*
+     * DO NOT set imageInput.value.
+     *
+     * Browsers do not allow JavaScript
+     * to set a file input's filename.
+     *
+     * Clear it instead.
+     */
+    if (imageInput) {
+      imageInput.value = '';
+    }
+
     editCard.hidden = false;
-    editCard.scrollIntoView({ behavior: 'smooth' });
+
+    editCard.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+
   } else {
     editCard.hidden = true;
   }
 }
 
 /**
- * Handle edit profile form submission.
+ * Handle edit profile form.
+ *
+ * Uses FormData so the profile picture
+ * can be uploaded from the local computer.
  */
-async function handleEditProfile() {
-  const form = document.getElementById('edit-profile-form');
-  if (!form) return;
+function handleEditProfile() {
+  const form =
+    document.getElementById(
+      'edit-profile-form'
+    );
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  if (!form) {
+    return;
+  }
 
-    const username = document.getElementById('edit-username').value.trim();
-    const bio = document.getElementById('edit-bio').value.trim();
-    const profileImage = document.getElementById('edit-profile-image').value.trim();
-    const formError = document.getElementById('edit-form-error');
-    const saveBtn = document.getElementById('save-profile-btn');
+  form.addEventListener(
+    'submit',
+    async function (event) {
+      event.preventDefault();
 
-    // Clear errors
-    document.getElementById('edit-username-error').textContent = '';
-    document.getElementById('edit-bio-error').textContent = '';
-    document.getElementById('edit-profile-image-error').textContent = '';
-    formError.hidden = true;
+      const usernameInput =
+        document.getElementById(
+          'edit-username'
+        );
 
-    // Validate
-    let valid = true;
-    if (!username) {
-      document.getElementById('edit-username-error').textContent = 'Username is required';
-      valid = false;
-    } else if (username.length < 3) {
-      document.getElementById('edit-username-error').textContent = 'Username must be at least 3 characters';
-      valid = false;
+      const bioInput =
+        document.getElementById(
+          'edit-bio'
+        );
+
+      const imageInput =
+        document.getElementById(
+          'edit-profile-image'
+        );
+
+      const usernameError =
+        document.getElementById(
+          'edit-username-error'
+        );
+
+      const bioError =
+        document.getElementById(
+          'edit-bio-error'
+        );
+
+      const imageError =
+        document.getElementById(
+          'edit-profile-image-error'
+        );
+
+      const formError =
+        document.getElementById(
+          'edit-form-error'
+        );
+
+      const saveBtn =
+        document.getElementById(
+          'save-profile-btn'
+        );
+
+      const username =
+        usernameInput
+          ? usernameInput.value.trim()
+          : '';
+
+      const bio =
+        bioInput
+          ? bioInput.value.trim()
+          : '';
+
+      /*
+       * Get selected local image.
+       *
+       * IMPORTANT:
+       * Do NOT use .value.trim().
+       */
+      const selectedFile =
+        imageInput &&
+        imageInput.files &&
+        imageInput.files.length > 0
+          ? imageInput.files[0]
+          : null;
+
+      if (usernameError) {
+        usernameError.textContent = '';
+      }
+
+      if (bioError) {
+        bioError.textContent = '';
+      }
+
+      if (imageError) {
+        imageError.textContent = '';
+      }
+
+      if (formError) {
+        formError.textContent = '';
+        formError.hidden = true;
+      }
+
+      let valid = true;
+
+      if (!username) {
+        if (usernameError) {
+          usernameError.textContent =
+            'Username is required';
+        }
+
+        valid = false;
+
+      } else if (username.length < 3) {
+        if (usernameError) {
+          usernameError.textContent =
+            'Username must be at least 3 characters';
+        }
+
+        valid = false;
+      }
+
+      /*
+       * Validate local image.
+       */
+      if (selectedFile) {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp'
+        ];
+
+        if (
+          !allowedTypes.includes(
+            selectedFile.type
+          )
+        ) {
+          if (imageError) {
+            imageError.textContent =
+              'Only JPG, PNG, GIF or WEBP images are allowed';
+          }
+
+          valid = false;
+        }
+
+        /*
+         * Maximum 5 MB.
+         */
+        if (
+          selectedFile.size >
+          5 * 1024 * 1024
+        ) {
+          if (imageError) {
+            imageError.textContent =
+              'Image must be smaller than 5 MB';
+          }
+
+          valid = false;
+        }
+      }
+
+      if (!valid) {
+        return;
+      }
+
+      if (saveBtn) {
+        setButtonLoading(
+          saveBtn,
+          'Saving...'
+        );
+      }
+
+      try {
+        /*
+         * Create multipart/form-data.
+         */
+        const formData =
+          new FormData();
+
+        formData.append(
+          'username',
+          username
+        );
+
+        formData.append(
+          'bio',
+          bio
+        );
+
+        /*
+         * Add image only when the user
+         * selected a new image.
+         */
+        if (selectedFile) {
+          formData.append(
+            'profile_image',
+            selectedFile
+          );
+        }
+
+        /*
+         * api.js already detects FormData
+         * and will NOT set application/json.
+         */
+        const response =
+          await usersApi.updateMe(
+            formData
+          );
+
+        if (
+          response &&
+          response.data &&
+          response.data.user
+        ) {
+          currentUser =
+            response.data.user;
+        }
+
+        const profileUsername =
+          document.getElementById(
+            'profile-username'
+          );
+
+        const profileBio =
+          document.getElementById(
+            'profile-bio'
+          );
+
+        const profileImageElement =
+          document.getElementById(
+            'profile-image'
+          );
+
+        if (profileUsername) {
+          profileUsername.textContent =
+            currentUser.username ||
+            username;
+        }
+
+        if (profileBio) {
+          profileBio.textContent =
+            currentUser.bio ||
+            'No bio yet';
+        }
+
+        if (profileImageElement) {
+          profileImageElement.src =
+            getProfileImageUrl(
+              currentUser.profile_image
+            );
+
+          profileImageElement.onerror =
+            function () {
+              this.onerror = null;
+              this.src =
+                DEFAULT_PROFILE_IMAGE;
+            };
+        }
+
+        /*
+         * Clear file input after successful upload.
+         */
+        if (imageInput) {
+          imageInput.value = '';
+        }
+
+        const editCard =
+          document.getElementById(
+            'edit-profile-card'
+          );
+
+        if (editCard) {
+          editCard.hidden = true;
+        }
+
+        showToast(
+          'Profile updated successfully!',
+          'success'
+        );
+
+      } catch (error) {
+        console.error(
+          'Update profile error:',
+          error
+        );
+
+        if (formError) {
+          formError.textContent =
+            error.message ||
+            'Failed to update profile';
+
+          formError.hidden = false;
+        }
+
+      } finally {
+        if (saveBtn) {
+          resetButtonLoading(
+            saveBtn
+          );
+        }
+      }
     }
-
-    if (profileImage && !/^https?:\/\/.+/.test(profileImage)) {
-      document.getElementById('edit-profile-image-error').textContent = 'Enter a valid URL';
-      valid = false;
-    }
-
-    if (!valid) return;
-
-    // Submit
-    setButtonLoading(saveBtn, 'Saving...');
-    try {
-      const response = await usersApi.updateMe({
-        username,
-        ...(bio ? { bio } : {}),
-        ...(profileImage ? { profile_image: profileImage } : {})
-      });
-
-      currentUser = response.data.user;
-      document.getElementById('profile-username').textContent = currentUser.username;
-      document.getElementById('profile-bio').textContent = currentUser.bio || 'No bio yet';
-      document.getElementById('profile-image').src = currentUser.profile_image || 'https://i.pravatar.cc/150?img=1';
-
-      document.getElementById('edit-profile-card').hidden = true;
-      showToast('Profile updated successfully!', 'success');
-    } catch (err) {
-      formError.textContent = err.message;
-      formError.hidden = false;
-      resetButtonLoading(saveBtn);
-    }
-  });
+  );
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', async () => {
-  // Wait for auth to initialize
-  const checkAuth = setInterval(() => {
-    if (isAuthenticated()) {
-      clearInterval(checkAuth);
-      loadProfile();
+/**
+ * Initialize profile page.
+ */
+document.addEventListener(
+  'DOMContentLoaded',
+  async function () {
+    try {
+      /*
+       * Wait for authentication.
+       */
+      const user =
+        await loadCurrentUser();
+
+      if (!user) {
+        window.location.href =
+          '/login.html';
+
+        return;
+      }
+
+      /*
+       * Setup navbar.
+       */
+      if (
+        typeof setupNavbar ===
+        'function'
+      ) {
+        setupNavbar();
+      }
+
+      /*
+       * Load profile.
+       */
+      await loadProfile();
+
+      /*
+       * Setup edit form.
+       */
       handleEditProfile();
 
-      // Follow button
-      document.getElementById('follow-btn')?.addEventListener('click', handleFollow);
+      /*
+       * Follow button.
+       */
+      const followButton =
+        document.getElementById(
+          'follow-btn'
+        );
 
-      // Edit profile button
-      document.getElementById('edit-profile-btn')?.addEventListener('click', toggleEditProfile);
+      if (followButton) {
+        followButton.addEventListener(
+          'click',
+          handleFollow
+        );
+      }
 
-      // Cancel edit button
-      document.getElementById('cancel-edit-btn')?.addEventListener('click', () => {
-        document.getElementById('edit-profile-card').hidden = true;
-      });
+      /*
+       * Edit profile button.
+       */
+      const editButton =
+        document.getElementById(
+          'edit-profile-btn'
+        );
 
-      // Pagination
-      document.getElementById('prev-page')?.addEventListener('click', () => {
-        if (profilePage > 1) {
-          profilePage--;
-          loadProfilePosts();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
+      if (editButton) {
+        editButton.addEventListener(
+          'click',
+          toggleEditProfile
+        );
+      }
 
-      document.getElementById('next-page')?.addEventListener('click', () => {
-        profilePage++;
-        loadProfilePosts();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      /*
+       * Cancel edit.
+       */
+      const cancelButton =
+        document.getElementById(
+          'cancel-edit-btn'
+        );
+
+      if (cancelButton) {
+        cancelButton.addEventListener(
+          'click',
+          function () {
+            const editCard =
+              document.getElementById(
+                'edit-profile-card'
+              );
+
+            if (editCard) {
+              editCard.hidden = true;
+            }
+          }
+        );
+      }
+
+      /*
+       * Previous page.
+       */
+      const previousButton =
+        document.getElementById(
+          'prev-page'
+        );
+
+      if (previousButton) {
+        previousButton.addEventListener(
+          'click',
+          function () {
+            if (profilePage <= 1) {
+              return;
+            }
+
+            profilePage--;
+
+            loadProfilePosts();
+
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth'
+            });
+          }
+        );
+      }
+
+      /*
+       * Next page.
+       */
+      const nextButton =
+        document.getElementById(
+          'next-page'
+        );
+
+      if (nextButton) {
+        nextButton.addEventListener(
+          'click',
+          function () {
+            profilePage++;
+
+            loadProfilePosts();
+
+            window.scrollTo({
+              top: 0,
+              behavior: 'smooth'
+            });
+          }
+        );
+      }
+
+    } catch (error) {
+      console.error(
+        'Profile initialization error:',
+        error
+      );
+
+      showToast(
+        error.message ||
+        'Failed to initialize profile',
+        'error'
+      );
     }
-  }, 100);
-
-  // Timeout after 5 seconds
-  setTimeout(() => clearInterval(checkAuth), 5000);
-});
+  }
+);

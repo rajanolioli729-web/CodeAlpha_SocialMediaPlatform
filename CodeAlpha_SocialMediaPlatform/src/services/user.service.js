@@ -7,7 +7,8 @@ const { AppError } = require('../middleware/error.middleware');
 async function getUserProfile(userId) {
   const [rows] = await pool.execute(
     `SELECT id, username, email, bio, profile_image, created_at
-     FROM users WHERE id = ?`,
+     FROM users
+     WHERE id = ?`,
     [userId]
   );
 
@@ -43,14 +44,22 @@ async function getUserProfile(userId) {
 /**
  * Update a user's own profile.
  */
-async function updateUserProfile(userId, { username, bio, profile_image }) {
+async function updateUserProfile(
+  userId,
+  { username, bio, profile_image }
+) {
   const [result] = await pool.execute(
     `UPDATE users
      SET username = COALESCE(?, username),
          bio = COALESCE(?, bio),
          profile_image = COALESCE(?, profile_image)
      WHERE id = ?`,
-    [username || null, bio || null, profile_image || null, userId]
+    [
+      username || null,
+      bio || null,
+      profile_image || null,
+      userId
+    ]
   );
 
   if (result.affectedRows === 0) {
@@ -58,7 +67,37 @@ async function updateUserProfile(userId, { username, bio, profile_image }) {
   }
 
   const [rows] = await pool.execute(
-    'SELECT id, username, email, bio, profile_image, created_at FROM users WHERE id = ?',
+    `SELECT id, username, email, bio, profile_image, created_at
+     FROM users
+     WHERE id = ?`,
+    [userId]
+  );
+
+  return rows[0];
+}
+
+/**
+ * Update a user's profile image.
+ *
+ * Used when a profile image is uploaded
+ * from the user's computer.
+ */
+async function updateProfileImage(userId, imagePath) {
+  const [result] = await pool.execute(
+    `UPDATE users
+     SET profile_image = ?
+     WHERE id = ?`,
+    [imagePath, userId]
+  );
+
+  if (result.affectedRows === 0) {
+    throw new AppError('User not found.', 404);
+  }
+
+  const [rows] = await pool.execute(
+    `SELECT id, username, email, bio, profile_image, created_at
+     FROM users
+     WHERE id = ?`,
     [userId]
   );
 
@@ -70,9 +109,13 @@ async function updateUserProfile(userId, { username, bio, profile_image }) {
  */
 async function isFollowing(followerId, followingId) {
   const [rows] = await pool.execute(
-    'SELECT id FROM followers WHERE follower_id = ? AND following_id = ?',
+    `SELECT id
+     FROM followers
+     WHERE follower_id = ?
+       AND following_id = ?`,
     [followerId, followingId]
   );
+
   return rows.length > 0;
 }
 
@@ -81,13 +124,19 @@ async function isFollowing(followerId, followingId) {
  */
 async function getFollowers(userId) {
   const [rows] = await pool.execute(
-    `SELECT u.id, u.username, u.profile_image, u.bio, f.created_at AS followed_at
+    `SELECT
+       u.id,
+       u.username,
+       u.profile_image,
+       u.bio,
+       f.created_at AS followed_at
      FROM followers f
      JOIN users u ON u.id = f.follower_id
      WHERE f.following_id = ?
      ORDER BY f.created_at DESC`,
     [userId]
   );
+
   return rows;
 }
 
@@ -96,19 +145,26 @@ async function getFollowers(userId) {
  */
 async function getFollowing(userId) {
   const [rows] = await pool.execute(
-    `SELECT u.id, u.username, u.profile_image, u.bio, f.created_at AS followed_at
+    `SELECT
+       u.id,
+       u.username,
+       u.profile_image,
+       u.bio,
+       f.created_at AS followed_at
      FROM followers f
      JOIN users u ON u.id = f.following_id
      WHERE f.follower_id = ?
      ORDER BY f.created_at DESC`,
     [userId]
   );
+
   return rows;
 }
 
 module.exports = {
   getUserProfile,
   updateUserProfile,
+  updateProfileImage,
   isFollowing,
   getFollowers,
   getFollowing

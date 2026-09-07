@@ -26,7 +26,7 @@ async function startServer() {
     process.on('SIGINT', shutdown);
 
   } catch (err) {
-    console.error('Failed to start server:', err.message);
+    console.error('Failed to start server:', err);
     process.exit(1);
   }
 }

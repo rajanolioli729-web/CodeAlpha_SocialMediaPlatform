@@ -7,17 +7,27 @@ const postService = require('../services/post.service');
 async function getProfile(req, res, next) {
   try {
     const userId = parseInt(req.params.id, 10);
-    const profile = await userService.getUserProfile(userId);
+
+    const profile =
+      await userService.getUserProfile(userId);
 
     let isFollowing = false;
+
     if (req.user && req.user.id !== userId) {
-      isFollowing = await userService.isFollowing(req.user.id, userId);
+      isFollowing =
+        await userService.isFollowing(
+          req.user.id,
+          userId
+        );
     }
 
     res.status(200).json({
       success: true,
       message: 'Profile retrieved successfully',
-      data: { profile, is_following: isFollowing }
+      data: {
+        profile,
+        is_following: isFollowing
+      }
     });
   } catch (err) {
     next(err);
@@ -29,17 +39,64 @@ async function getProfile(req, res, next) {
  */
 async function updateMe(req, res, next) {
   try {
-    const { username, bio, profile_image } = req.body;
-    const user = await userService.updateUserProfile(req.user.id, {
+    const {
       username,
       bio,
       profile_image
-    });
+    } = req.body;
+
+    const user =
+      await userService.updateUserProfile(
+        req.user.id,
+        {
+          username,
+          bio,
+          profile_image
+        }
+      );
 
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: { user }
+      data: {
+        user
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * POST /api/users/me/profile-image
+ *
+ * Upload profile image from computer.
+ */
+async function uploadProfileImage(req, res, next) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a profile image.'
+      });
+    }
+
+    const imagePath =
+      `/uploads/${req.file.filename}`;
+
+    const user =
+      await userService.updateProfileImage(
+        req.user.id,
+        imagePath
+      );
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile image uploaded successfully',
+      data: {
+        user,
+        profile_image: imagePath
+      }
     });
   } catch (err) {
     next(err);
@@ -51,22 +108,34 @@ async function updateMe(req, res, next) {
  */
 async function getUserPosts(req, res, next) {
   try {
-    const userId = parseInt(req.params.id, 10);
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const userId =
+      parseInt(req.params.id, 10);
 
-    // Verify user exists
+    const page =
+      parseInt(req.query.page, 10) || 1;
+
+    const limit = Math.min(
+      parseInt(req.query.limit, 10) || 10,
+      50
+    );
+
     await userService.getUserProfile(userId);
 
-    const result = await postService.getPostsByUser(userId, {
-      page,
-      limit,
-      currentUserId: req.user ? req.user.id : null
-    });
+    const result =
+      await postService.getPostsByUser(
+        userId,
+        {
+          page,
+          limit,
+          currentUserId:
+            req.user ? req.user.id : null
+        }
+      );
 
     res.status(200).json({
       success: true,
-      message: 'User posts retrieved successfully',
+      message:
+        'User posts retrieved successfully',
       data: result
     });
   } catch (err) {
@@ -79,14 +148,20 @@ async function getUserPosts(req, res, next) {
  */
 async function getFollowers(req, res, next) {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId =
+      parseInt(req.params.id, 10);
+
     await userService.getUserProfile(userId);
-    const followers = await userService.getFollowers(userId);
+
+    const followers =
+      await userService.getFollowers(userId);
 
     res.status(200).json({
       success: true,
       message: 'Followers retrieved successfully',
-      data: { followers }
+      data: {
+        followers
+      }
     });
   } catch (err) {
     next(err);
@@ -98,14 +173,20 @@ async function getFollowers(req, res, next) {
  */
 async function getFollowing(req, res, next) {
   try {
-    const userId = parseInt(req.params.id, 10);
+    const userId =
+      parseInt(req.params.id, 10);
+
     await userService.getUserProfile(userId);
-    const following = await userService.getFollowing(userId);
+
+    const following =
+      await userService.getFollowing(userId);
 
     res.status(200).json({
       success: true,
       message: 'Following retrieved successfully',
-      data: { following }
+      data: {
+        following
+      }
     });
   } catch (err) {
     next(err);
@@ -115,6 +196,7 @@ async function getFollowing(req, res, next) {
 module.exports = {
   getProfile,
   updateMe,
+  uploadProfileImage,
   getUserPosts,
   getFollowers,
   getFollowing
