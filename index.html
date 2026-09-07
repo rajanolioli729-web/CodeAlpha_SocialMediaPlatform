@@ -1,15 +1,20 @@
-```html
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>SocialSphere - CodeAlpha Task 2</title>
 
-  <!-- Redirect to the static frontend -->
-  <meta http-equiv="refresh" content="3;url=./public/index.html">
+  <!-- Redirect to the frontend -->
+  <meta http-equiv="refresh" content="3;url=./CodeAlpha_SocialMediaPlatform/public/index.html">
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #0f172a;
@@ -20,7 +25,6 @@
       min-height: 100vh;
       margin: 0;
       padding: 24px;
-      box-sizing: border-box;
       text-align: center;
     }
 
@@ -31,7 +35,6 @@
       border-radius: 12px;
       padding: 32px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      box-sizing: border-box;
     }
 
     h1 {
@@ -65,6 +68,7 @@
 
 <body>
   <div class="card">
+
     <h1>SocialSphere</h1>
 
     <p>
@@ -73,22 +77,28 @@
 
     <p>
       Redirecting to the app UI&hellip; if nothing happens,
-      <a href="./public/index.html">click here</a>.
+      <a href="./CodeAlpha_SocialMediaPlatform/public/index.html">
+        click here
+      </a>.
     </p>
 
     <p class="note">
       This project is a full-stack Node.js + Express + MySQL application.
-      GitHub Pages can only host static frontend files &mdash; the API and
-      database do not run on GitHub Pages.
+      GitHub Pages can host the static frontend files, but the Node.js API
+      and MySQL database must run on a backend server.
+
       To run the complete application locally, see the
       <a href="https://github.com/rajanolioli729-web/CodeAlpha_SocialMediaPlatform#-installation">
         README installation instructions
       </a>
       and run
       <code>npm install && npm run dev</code>
-      inside the project folder.
+      inside the
+      <code>CodeAlpha_SocialMediaPlatform</code>
+      folder.
     </p>
+
   </div>
 </body>
 </html>
-```
+
